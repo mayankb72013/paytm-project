@@ -1,7 +1,7 @@
 import express from "express"
 import { PrismaClient } from "@prisma/client"
 import { withAccelerate } from "@prisma/extension-accelerate";
-// import { jwt } from "jsonwebtoken"
+import jwt from "jsonwebtoken";
 
 const prisma = new PrismaClient().$extends(withAccelerate());
 const app = express();
@@ -27,8 +27,30 @@ app.post("/signup",async function (req,res){
         msg: "You've been signed up!"
     })
 })
-app.post("/signin",function (req,res){
-   
+app.post("/signin",async function (req,res){
+   const username = req.body.username;
+   const password = req.body.password;
+
+   const user = await prisma.user.findUnique({
+      where:{
+        username,
+        password
+      }
+   })
+
+   if(user !== null){
+      const token = jwt.sign({
+        userId: user.id.toString
+    },process.env.JWT_SECRET as string);
+     res.json({
+        token: token
+     })
+   }
+   else{
+     res.json({
+        msg : "Invalid credentials"
+     })
+   }
 })
 
 app.post("/updateInfo",function (req,res){
